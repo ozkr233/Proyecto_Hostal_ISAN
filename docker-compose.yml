@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: hostal_isan_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-hostal_isan}
+      POSTGRES_USER: ${POSTGRES_USER:-hostal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hostal}
+      # Los .sql de inicializacion crean objetos con acentos y enies.
+      LANG: es_CL.UTF-8
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Los archivos de db/ corren una sola vez, en orden alfabetico,
+      # cuando el volumen esta vacio.
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hostal} -d ${POSTGRES_DB:-hostal_isan}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: hostal_isan_pgadmin
+    restart: unless-stopped
+    environment:
+      # pgAdmin rechaza dominios reservados como .local, por eso un dominio real.
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@hostalisan.cl}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmindata:/var/lib/pgadmin
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  pgadmindata:
