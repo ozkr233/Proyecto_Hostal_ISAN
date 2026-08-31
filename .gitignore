@@ -8,3 +8,9 @@ venv/
 Excels/
 
 
+
+# dashboard (Next.js)
+dashboard/node_modules/
+dashboard/.next/
+dashboard/.env.local
+dashboard/.vercel

@@ -1,0 +1,247 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   Identidad
+   --------------------------------------------------------------------------
+   El libro de origen es una matriz: en 'R. OFICIAL' cada persona es una fila,
+   cada dia del mes una columna, y cada celda una sola letra escrita a mano
+   (D / N / E). Esa celda es la unidad del diseno. Se repite como marca en la
+   navegacion, en los KPI y, en su casa, en la grilla del registro oficial.
+
+   Los codigos -RUT, folio, habitacion, marcas- van en monoespaciada: no son
+   palabras, son identificadores, y asi se escanean de una pasada.
+   Las etiquetas chicas van en mayuscula con tracking abierto, como los
+   encabezados del propio Excel.
+
+   Los colores de serie son la paleta categorica validada de la skill dataviz
+   (adyacentes CVD ΔE 9.1 claro / 8.4 oscuro). No inventar tonos nuevos.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  --plano: #f9f9f7;
+  --superficie: #fcfcfb;
+  --superficie-2: #f2f1ed;
+  --superficie-3: #e9e8e2;
+
+  --tinta: #0b0b0b;
+  --tinta-2: #52514e;
+  --tinta-3: #898781;
+
+  --linea: #e1e0d9;
+  --eje: #c3c2b7;
+  --borde: rgba(11, 11, 11, 0.1);
+
+  /* Acento de interfaz: foco, seleccion, pestana activa. Nunca como relleno
+     dentro de un grafico, para que no se confunda con la serie 1. */
+  --acento: #1c5cab;
+  --acento-tinta: #ffffff;
+  --acento-suave: #e8f0fb;
+
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --s3: #1baf7a;
+  --s4: #eda100;
+  --s5: #e87ba4;
+  --s6: #008300;
+  --s7: #4a3aa7;
+  --s8: #e34948;
+
+  --bien: #0ca30c;
+  --aviso: #fab219;
+  --serio: #ec835a;
+  --critico: #d03b3b;
+
+  --fuente: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono",
+    Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --plano: #0d0d0d;
+    --superficie: #1a1a19;
+    --superficie-2: #232322;
+    --superficie-3: #2c2c2a;
+
+    --tinta: #ffffff;
+    --tinta-2: #c3c2b7;
+    --tinta-3: #898781;
+
+    --linea: #2c2c2a;
+    --eje: #383835;
+    --borde: rgba(255, 255, 255, 0.1);
+
+    --acento: #3987e5;
+    --acento-tinta: #06121f;
+    --acento-suave: #17273a;
+
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+    --s4: #c98500;
+    --s5: #d55181;
+    --s6: #008300;
+    --s7: #9085e9;
+    --s8: #e66767;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --plano: #0d0d0d;
+  --superficie: #1a1a19;
+  --superficie-2: #232322;
+  --superficie-3: #2c2c2a;
+
+  --tinta: #ffffff;
+  --tinta-2: #c3c2b7;
+  --tinta-3: #898781;
+
+  --linea: #2c2c2a;
+  --eje: #383835;
+  --borde: rgba(255, 255, 255, 0.1);
+
+  --acento: #3987e5;
+  --acento-tinta: #06121f;
+  --acento-suave: #17273a;
+
+  --s1: #3987e5;
+  --s2: #d95926;
+  --s3: #199e70;
+  --s4: #c98500;
+  --s5: #d55181;
+  --s6: #008300;
+  --s7: #9085e9;
+  --s8: #e66767;
+}
+
+@theme inline {
+  --color-plano: var(--plano);
+  --color-superficie: var(--superficie);
+  --color-superficie-2: var(--superficie-2);
+  --color-superficie-3: var(--superficie-3);
+  --color-tinta: var(--tinta);
+  --color-tinta-2: var(--tinta-2);
+  --color-tinta-3: var(--tinta-3);
+  --color-linea: var(--linea);
+  --color-eje: var(--eje);
+  --color-borde: var(--borde);
+  --color-acento: var(--acento);
+  --color-acento-tinta: var(--acento-tinta);
+  --color-acento-suave: var(--acento-suave);
+  --color-bien: var(--bien);
+  --color-aviso: var(--aviso);
+  --color-serio: var(--serio);
+  --color-critico: var(--critico);
+  --font-sans: var(--fuente);
+  --font-mono: var(--mono);
+}
+
+* {
+  border-color: var(--borde);
+}
+
+html,
+body {
+  background: var(--plano);
+  color: var(--tinta);
+  font-family: var(--fuente);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* -------------------------------------------------------------------------
+   Etiqueta chica: el encabezado del Excel, en minuscula de tamano y mayuscula
+   de forma. Es el rotulo de toda la interfaz.
+   ------------------------------------------------------------------------- */
+.rotulo {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+  line-height: 1.4;
+}
+
+/* Identificadores: RUT, folio, habitacion, fechas en tabla. */
+.codigo {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95em;
+}
+
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+}
+
+/* -------------------------------------------------------------------------
+   La marca: una celda del libro. 4px de radio, igual que el extremo de dato
+   de las barras, para que grilla y graficos hablen el mismo idioma.
+   ------------------------------------------------------------------------- */
+.marca {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+}
+
+.marca-D {
+  background: var(--s1);
+}
+.marca-N {
+  background: var(--s7);
+}
+.marca-E {
+  background: var(--s4);
+  color: #2b1d00;
+}
+.marca-vacia {
+  background: var(--superficie-2);
+}
+
+/* Barras de desplazamiento discretas en las tablas anchas. */
+.scroll-fino {
+  scrollbar-width: thin;
+  scrollbar-color: var(--eje) transparent;
+}
+.scroll-fino::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.scroll-fino::-webkit-scrollbar-thumb {
+  background: var(--eje);
+  border-radius: 6px;
+  border: 3px solid var(--superficie);
+}
+.scroll-fino::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
