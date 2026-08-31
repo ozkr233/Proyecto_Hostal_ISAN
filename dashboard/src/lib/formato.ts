@@ -9,6 +9,16 @@ export function fechaCorta(f: string): string {
   return `${Number(d)} ${MESES[Number(m) - 1] ?? "?"}`;
 }
 
+/**
+ * 'YYYY-MM-DD' -> '9 may 25'. Para ejes que cruzan de un ano a otro: sin el
+ * ano, 2025-05-09 y 2026-02-28 se leen como '9 may' y '28 feb' y la serie
+ * parece desordenada cuando en realidad esta bien.
+ */
+export function fechaCortaAno(f: string): string {
+  const [a, m, d] = f.split("-");
+  return `${Number(d)} ${MESES[Number(m) - 1] ?? "?"} ${a.slice(2)}`;
+}
+
 /** 'YYYY-MM-DD' -> '15 jul 2026'. */
 export function fechaLarga(f: string): string {
   const [a, m, d] = f.split("-");

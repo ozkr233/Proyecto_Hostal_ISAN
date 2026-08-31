@@ -22,14 +22,37 @@ const MAX_COLUMNAS = 92;
  * contradice sola, 701 en la fila 164 y 707 en la 184-. Aqui es un conteo
  * sobre las mismas celdas que se ven al lado, asi que no puede descuadrar.
  */
+/** Dias consecutivos entre dos fechas, ambas incluidas. Aritmetica en UTC: sin zona que corra el dia. */
+function diasEntre(desde: string, hasta: string): string[] {
+  const salida: string[] = [];
+  const fin = Date.parse(hasta + "T00:00:00Z");
+  for (let t = Date.parse(desde + "T00:00:00Z"); t <= fin; t += 86400000) {
+    salida.push(new Date(t).toISOString().slice(0, 10));
+  }
+  return salida;
+}
+
 export default function PaginaRegistro() {
-  const { estadias, noches, nochesPorEstadia } = useDatos();
+  const { estadias, noches, nochesPorEstadia, filtros } = useDatos();
   const [orden, setOrden] = useState<"nombre" | "noches">("nombre");
 
-  const fechas = useMemo(
-    () => [...new Set(noches.map((n) => n.fecha))].sort(),
-    [noches],
-  );
+  // El eje de dias es CONTINUO, no solo los dias con datos. Si las columnas
+  // fueran las fechas presentes, buscar a una persona dejaria sus 18 noches
+  // pegadas una tras otra y los huecos desaparecerian: justo lo que esta
+  // grilla existe para mostrar. JUAN CORREA tiene 18 noches en tres tramos.
+  const fechas = useMemo(() => {
+    if (noches.length === 0) return [];
+
+    // Con rango explicito manda el rango; si no, el mes completo, como la hoja.
+    if (filtros.desde && filtros.hasta) return diasEntre(filtros.desde, filtros.hasta);
+
+    const ordenadas = noches.map((n) => n.fecha).sort();
+    const primera = ordenadas[0];
+    const ultima = ordenadas[ordenadas.length - 1];
+    const [a, m] = ultima.split("-").map(Number);
+    const finDeMes = new Date(Date.UTC(a, m, 0)).toISOString().slice(0, 10);
+    return diasEntre(primera.slice(0, 8) + "01", finDeMes);
+  }, [noches, filtros.desde, filtros.hasta]);
 
   const marcas = useMemo(() => {
     const m = new Map<string, string | null>();

@@ -387,6 +387,103 @@ respecto de Docker que ya están resueltas en el código:
 - La clave de la base va en `.env`, que está en `.gitignore`. No la pegues en
   ningún archivo que se versione.
 
+## Dashboard
+
+`dashboard/` es una aplicación Next.js que lee la base y reemplaza la lectura
+del Excel: ocupación, pensión, el registro oficial y la calidad de la carga,
+todo filtrable por cualquier campo. **Solo lee**; nunca escribe.
+
+```bash
+cd dashboard
+npm install
+cp .env.example .env.local     # y completar las tres claves
+npm run dev                    # http://localhost:3000
+```
+
+### Por qué no usa la API de Supabase
+
+`supabase-js` desde el navegador exigiría exponer `core` por PostgREST, y eso
+deja nombre, RUT y celular de los trabajadores legibles desde internet con la
+clave anónima (ver *Antes de meter datos reales*). Las consultas corren en el
+servidor y la cadena de conexión no sale de ahí.
+
+El dataset completo son ~5.300 filas, así que se carga entero una vez y **todo
+el filtrado ocurre en el navegador**: mover un filtro no vuelve a la base. Por
+lo mismo el dashboard no consulta las vistas de `rpt` que agregan
+(`vw_registro_oficial`, `vw_ocupacion_diaria`, `vw_pension_diaria`,
+`vw_facturacion_empresa_mes`): una vista fija no puede reagregarse sobre lo
+filtrado. Sus números quedan como referencia de que el cálculo coincide.
+`vw_descuadre` sí se consulta tal cual, porque depende de
+`staging.registro_crudo`, que no se carga al cliente.
+
+### Rol de solo lectura
+
+Ejecutar `dashboard/sql/dashboard_ro.sql` una vez en el *SQL Editor* de
+Supabase y apuntar `DATABASE_URL` a ese rol. Por el pooler el usuario va como
+`dashboard_ro.<project-ref>`, no el rol pelado.
+
+### Variables
+
+| | |
+|---|---|
+| `DATABASE_URL` | Transaction pooler, **puerto 6543** |
+| `AUTH_SECRET` | 32 bytes al azar; firma la cookie de sesión |
+| `DASHBOARD_PASSWORD_HASH` | `node scripts/hash.mjs "<clave>"` |
+
+El acceso es una clave única contra un hash scrypt, con cookie `HttpOnly`
+firmada (JWT, 7 días) que verifica el middleware en toda ruta que no sea
+`/login`.
+
+### El pooler no tolera consultas encoladas
+
+Costó encontrarlo y no da error: **se cuelga para siempre**, sin respuesta ni
+excepción. Con `max: 3` y las ocho consultas lanzadas por `Promise.all`,
+postgres.js encola varias en la misma conexión (*pipelining*); el pooler en
+modo transacción multiplexa por transacción y no soporta eso. Con `max: 8`
+—una conexión por consulta— funciona, pero cada instancia serverless se
+quedaría con ocho conexiones del pooler y el plan free tiene pocas.
+
+La solución es `max: 1` y las consultas **en serie**: ~1,8 s una vez cada cinco
+minutos, que es lo que dura el caché en memoria. Es el mismo tipo de problema
+que hace fallar al ETL contra Supabase: este pooler castiga la concurrencia.
+
+### Desplegar en Vercel
+
+El proyecto no está bajo git, así que hay dos caminos: `npx vercel` desde
+`dashboard/`, que despliega sin repositorio, o `git init` + GitHub para tener
+despliegue automático. **Antes de subir nada, confirmar que `.env` sigue
+ignorado**: tiene la clave de Supabase en claro.
+
+- *Root Directory*: `dashboard/`
+- Región `cle1` (Cleveland): Supabase está en `us-east-2`, es la más cercana.
+- Las tres variables de arriba, en *Environment Variables*.
+
+Recordar que los proyectos free de Supabase se pausan tras una semana sin uso.
+
+### Verificación
+
+Ejecutado contra Supabase con el navegador conduciendo la interfaz real. Los
+números salen del dashboard, no de una consulta aparte:
+
+| Comprobación | Esperado | Dashboard |
+|---|---|---|
+| Noches, estadías, personas, rechazos | 1.650 / 458 / 397 / 35 | **igual** |
+| Noches por empresa, archivo ISAM | 407 / 170 / 31 / 30 / 28 / 25 / 6 = 697 | **igual** |
+| Ocupación del 01-07, ISAM | 55 | **55** |
+| Pensión del 01-07, ISAM | 49 / 88 / 48 / 14 | **igual** |
+| JUAN CORREA | 18 noches, 3 tramos | **18, 3 tramos** |
+
+La segunda fila es la tabla ya conciliada de *Estado de la verificación*, y
+ejercita de punta a punta el filtro global más la agregación en el navegador.
+Los 88 almuerzos del 01-07 son los 44 de la hoja diaria más los 44 de
+`ALMUERZOS ISAM`, que el pie del Excel no suma porque son registros aparte.
+
+La pestaña **Calidad** agrega algo que no estaba: `core.servicio_consumo` tiene
+fechas entre 2025-05-09 y 2027-07-22, cuando los libros de julio 2026 cubren
+como mucho de febrero a julio de 2026. Son años mal tecleados en la celda de
+origen; el ETL carga la fecha que trae el libro sin corregirla, y hasta ahora
+no los veía nadie.
+
 ## Fuera de alcance
 
 La aplicación de captura que reemplace operativamente el Excel. Con `core`

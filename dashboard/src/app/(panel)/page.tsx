@@ -13,7 +13,7 @@ import {
   TarjetaGrafico,
   type Serie,
 } from "@/components/graficos/comun";
-import { fechaCorta, fechaLarga } from "@/lib/formato";
+import { fechaCorta, fechaCortaAno, fechaLarga } from "@/lib/formato";
 import {
   COLOR_SERVICIO,
   COLOR_TURNO,
@@ -22,6 +22,12 @@ import {
   mapaColores,
 } from "@/lib/paleta";
 import { nombreTurno } from "@/components/ui";
+
+/** Etiqueta de eje: agrega el ano solo si el rango cruza de uno a otro. */
+function rotulador(fechas: string[]): (f: string) => string {
+  const anos = new Set(fechas.map((f) => f.slice(0, 4)));
+  return anos.size > 1 ? fechaCortaAno : fechaCorta;
+}
 
 export default function Resumen() {
   const { todo, estadias, noches, servicios, personas, catalogo } = useDatos();
@@ -55,9 +61,13 @@ export default function Resumen() {
       if (!fila) porFecha.set(n.fecha, (fila = {}));
       fila[empresa] = (fila[empresa] ?? 0) + 1;
     }
-    const puntos: PuntoApilado[] = [...porFecha.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([x, valores]) => ({ x, etiqueta: fechaCorta(x), valores }));
+    const ordenadas = [...porFecha.entries()].sort(([a], [b]) => a.localeCompare(b));
+    const etiquetar = rotulador(ordenadas.map(([x]) => x));
+    const puntos: PuntoApilado[] = ordenadas.map(([x, valores]) => ({
+      x,
+      etiqueta: etiquetar(x),
+      valores,
+    }));
 
     const presentes = new Set<string>();
     for (const p of puntos) for (const k of Object.keys(p.valores)) presentes.add(k);
@@ -140,9 +150,13 @@ export default function Resumen() {
       if (!fila) porFecha.set(s.fecha, (fila = {}));
       fila[s.tipo_servicio] = (fila[s.tipo_servicio] ?? 0) + s.cantidad;
     }
-    const puntos: PuntoApilado[] = [...porFecha.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([x, valores]) => ({ x, etiqueta: fechaCorta(x), valores }));
+    const ordenadas = [...porFecha.entries()].sort(([a], [b]) => a.localeCompare(b));
+    const etiquetar = rotulador(ordenadas.map(([x]) => x));
+    const puntos: PuntoApilado[] = ordenadas.map(([x, valores]) => ({
+      x,
+      etiqueta: etiquetar(x),
+      valores,
+    }));
 
     const presentes = new Set(servicios.map((s) => s.tipo_servicio));
     const series: Serie[] = SERVICIOS_ORDEN.filter((t) => presentes.has(t)).map(
