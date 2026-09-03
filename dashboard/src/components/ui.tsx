@@ -1,10 +1,20 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 /* --------------------------------------------------------------------------
    Menu desplegable. Cierra al hacer clic fuera y con Escape, y devuelve el
    foco al disparador: sin eso el teclado queda atrapado en la pagina.
+
+   El panel se dibuja en un PORTAL sobre <body>, con position: fixed. No es
+   capricho: los menus de cabecera viven dentro del contenedor con
+   `overflow-auto` de la tabla, y un hijo absoluto lo recorta. Con la tabla
+   filtrada a dos filas, el desplegable de EMPRESA se cortaba despues de la
+   primera opcion. Ademas, cualquier ancestro `sticky` con z-index crea un
+   contexto de apilamiento propio, asi que un menu anidado nunca podia
+   garantizar quedar por encima del resto. En <body> no hay nada que lo
+   recorte ni que lo tape.
    -------------------------------------------------------------------------- */
 export function Menu({
   resumen,
@@ -20,13 +30,51 @@ export function Menu({
   alinear?: "izq" | "der";
 }) {
   const [abierto, setAbierto] = useState(false);
-  const caja = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; maxAlto: number }>({
+    top: 0,
+    left: 0,
+    maxAlto: 320,
+  });
+  const panel = useRef<HTMLDivElement>(null);
   const disparador = useRef<HTMLButtonElement>(null);
+
+  const MARGEN = 8;
+
+  const colocar = useCallback(() => {
+    const t = disparador.current?.getBoundingClientRect();
+    if (!t) return;
+
+    const left =
+      alinear === "der"
+        ? Math.max(MARGEN, t.right - ancho)
+        : Math.min(t.left, window.innerWidth - ancho - MARGEN);
+
+    // Si abajo no cabe pero arriba si, se abre hacia arriba.
+    const abajo = window.innerHeight - t.bottom - MARGEN;
+    const arriba = t.top - MARGEN;
+    const haciaArriba = abajo < 180 && arriba > abajo;
+
+    setPos({
+      top: haciaArriba ? Math.max(MARGEN, t.top - Math.min(320, arriba) - 4) : t.bottom + 4,
+      left: Math.max(MARGEN, left),
+      maxAlto: Math.min(320, haciaArriba ? arriba : abajo),
+    });
+  }, [alinear, ancho]);
+
+  // Antes de pintar, para que no se vea saltar desde la esquina.
+  useLayoutEffect(() => {
+    if (abierto) colocar();
+  }, [abierto, colocar]);
 
   useEffect(() => {
     if (!abierto) return;
+
     const fuera = (e: MouseEvent) => {
-      if (caja.current && !caja.current.contains(e.target as Node)) {
+      const destino = e.target as Node;
+      if (
+        !panel.current?.contains(destino) &&
+        !disparador.current?.contains(destino)
+      ) {
         setAbierto(false);
       }
     };
@@ -36,16 +84,24 @@ export function Menu({
         disparador.current?.focus();
       }
     };
+    // Al ser `fixed`, el panel no sigue solo a su disparador cuando algo se
+    // desplaza. `true` para capturar tambien el scroll de la tabla, que no
+    // burbujea.
+    const seguir = () => colocar();
     document.addEventListener("mousedown", fuera);
     document.addEventListener("keydown", tecla);
+    window.addEventListener("scroll", seguir, true);
+    window.addEventListener("resize", seguir);
     return () => {
       document.removeEventListener("mousedown", fuera);
       document.removeEventListener("keydown", tecla);
+      window.removeEventListener("scroll", seguir, true);
+      window.removeEventListener("resize", seguir);
     };
-  }, [abierto]);
+  }, [abierto, colocar]);
 
   return (
-    <div className="relative" ref={caja}>
+    <>
       <button
         ref={disparador}
         type="button"
@@ -65,16 +121,25 @@ export function Menu({
         </span>
       </button>
 
-      {abierto ? (
-        <div
-          style={{ width: ancho }}
-          className={`absolute z-40 mt-1 tarjeta shadow-lg p-2 max-h-[320px] overflow-auto scroll-fino
-                      ${alinear === "der" ? "right-0" : "left-0"}`}
-        >
-          {children}
-        </div>
-      ) : null}
-    </div>
+      {abierto && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              ref={panel}
+              style={{
+                position: "fixed",
+                top: pos.top,
+                left: pos.left,
+                width: ancho,
+                maxHeight: pos.maxAlto,
+              }}
+              className="z-50 tarjeta shadow-lg p-2 overflow-auto scroll-fino"
+            >
+              {children}
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
 

@@ -39,8 +39,16 @@ export function BarraFiltros() {
         }`
       : "Fechas: todas";
 
+  // z-40: por encima de las celdas fijas de las tablas, que llegan a z-30.
+  //
+  // Al ser `sticky` con z-index, esta barra crea su propio contexto de
+  // apilamiento, asi que el z-40 de los desplegables de dentro solo compite
+  // entre hermanos y no contra el resto de la pagina. Lo que decide si un menu
+  // abierto tapa a la tabla -o queda tapado por ella- es el z-index de ESTA
+  // barra. Con z-20, la columna fija del registro oficial (z-30) atravesaba el
+  // desplegable de fechas y lo partia en dos.
   return (
-    <div className="sticky top-[73px] z-20 bg-plano border-b border-borde px-4 py-2">
+    <div className="sticky top-[73px] z-40 bg-plano border-b border-borde px-4 py-2">
       <div className="flex items-center gap-2 flex-wrap">
         <Menu
           resumen={rangoResumen}

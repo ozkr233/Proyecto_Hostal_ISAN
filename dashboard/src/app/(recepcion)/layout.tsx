@@ -21,7 +21,7 @@ export default async function LayoutRecepcion({
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-30 bg-plano border-b border-borde">
+      <header className="sticky top-0 z-50 bg-plano border-b border-borde">
         <div className="px-4 py-2.5 flex items-center gap-3">
           <MarcaLibro />
           <div className="min-w-0">
