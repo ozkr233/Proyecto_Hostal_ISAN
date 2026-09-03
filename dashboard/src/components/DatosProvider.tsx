@@ -9,6 +9,7 @@ import {
 } from "react";
 import { norm } from "@/lib/filtros";
 import type {
+  Ausencia,
   Datos,
   Estadia,
   Evento,
@@ -51,6 +52,7 @@ type Contexto = {
   servicios: Servicio[];
   personas: Persona[];
   eventos: Evento[];
+  ausencias: Ausencia[];
   rechazos: Rechazo[];
 
   /** Noches de cada estadia, ya filtradas. La usa la grilla del registro oficial. */
@@ -189,6 +191,17 @@ export function DatosProvider({
       (ev) => idsEstadia.has(ev.estadia_id) && (!hayRango || enRango(ev.fecha)),
     );
 
+    // ---- Ausencias ------------------------------------------------------
+    // Igual que los eventos: cuelgan de una estadia, asi que siguen a la
+    // estadia. Una ausencia entra en el rango si se solapa con el, no solo si
+    // empieza dentro: unas vacaciones de julio a agosto son parte de los dos.
+    const ausencias = datos.ausencias.filter(
+      (a) =>
+        idsEstadia.has(a.estadia_id) &&
+        (!hayRango ||
+          ((!hasta || a.desde <= hasta) && (!desde || (a.hasta ?? "9999-12-31") >= desde))),
+    );
+
     // ---- Personas -------------------------------------------------------
     // Sin filtros de dimension se muestran las 397. Con alguno, solo quienes
     // aparecen en lo que quedo a la vista.
@@ -230,6 +243,7 @@ export function DatosProvider({
       servicios,
       personas,
       eventos,
+      ausencias,
       rechazos,
       nochesPorEstadia,
       catalogo,

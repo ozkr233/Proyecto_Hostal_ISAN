@@ -12,6 +12,8 @@ export type Turno = "D" | "N" | "E";
 export type TipoHabitacion = "DOBLE" | "SINGLE";
 export type Grupo = "A" | "B";
 export type EstadoEntrega = "ENTREGADA" | "NO_ENTREGADA" | "NO_APLICA";
+/** De donde salio la fila: importada de los libros, o capturada en recepcion. */
+export type OrigenRegistro = "ETL_EXCEL" | "WEB";
 export type TipoServicio =
   | "DESAYUNO"
   | "ALMUERZO"
@@ -45,8 +47,20 @@ export type Estadia = {
   fecha_salida: Fecha | null;
   hora_salida: string | null;
   motivo_salida: string | null;
+  motivo_salida_nombre: string | null;
+  motivo_salida_detalle: string | null;
+  salida_anticipada: boolean;
+  fecha_salida_prevista: Fecha | null;
+  turno_habitual: Turno | null;
   chip_devuelto: EstadoEntrega;
   llaves_devueltas: EstadoEntrega;
+  numero_llave: string | null;
+  numero_chip: string | null;
+  llaves_devueltas_en: Fecha | null;
+  chip_devuelto_en: Fecha | null;
+  origen: OrigenRegistro;
+  registrado_por: string | null;
+  salida_registrada_por: string | null;
   patente_vehiculo: string | null;
   usa_estacionamiento: boolean;
   observaciones: string | null;
@@ -100,6 +114,30 @@ export type Evento = {
   detalle: string | null;
 };
 
+/**
+ * Permiso, vacaciones o licencia. Lo que en el Excel eran las filas 97-99 de
+ * R. OFICIAL: tres numeros tecleados a mano, sin persona detras.
+ */
+export type Ausencia = {
+  id: number;
+  estadia_id: number;
+  persona_id: number;
+  persona: string;
+  rut: string | null;
+  empresa: string;
+  hostal: string;
+  habitacion: string | null;
+  tipo: string;
+  tipo_nombre: string;
+  desde: Fecha;
+  /** null = todavia no vuelve. Es informacion, no un dato faltante. */
+  hasta: Fecha | null;
+  dias: number;
+  conserva_habitacion: boolean;
+  detalle: string | null;
+  registrado_por: string | null;
+};
+
 export type Habitacion = {
   id: number;
   hostal: string;
@@ -132,6 +170,7 @@ export type Datos = {
   servicios: Servicio[];
   personas: Persona[];
   eventos: Evento[];
+  ausencias: Ausencia[];
   habitaciones: Habitacion[];
   rechazos: Rechazo[];
   descuadre: Descuadre[];

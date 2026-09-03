@@ -25,11 +25,24 @@ export function FormularioLogin({ destino }: { destino: string }) {
     <form action={accion} className="tarjeta p-5 flex flex-col gap-3">
       <input type="hidden" name="destino" value={destino} />
       <label className="flex flex-col gap-1.5">
+        <span className="rotulo">Usuario</span>
+        <input
+          name="usuario"
+          type="text"
+          autoFocus
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          required
+          className="h-9 px-2.5 rounded-md bg-superficie-2 border border-borde
+                     text-[13px]"
+        />
+      </label>
+      <label className="flex flex-col gap-1.5">
         <span className="rotulo">Clave</span>
         <input
           name="clave"
           type="password"
-          autoFocus
           autoComplete="current-password"
           required
           className="h-9 px-2.5 rounded-md bg-superficie-2 border border-borde

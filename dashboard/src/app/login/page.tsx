@@ -21,7 +21,8 @@ export default async function PaginaLogin({
           Registro de hostales
         </h1>
         <p className="text-tinta-2 mt-1 mb-7 leading-relaxed">
-          ISAM y ALMAR WATER. Ocupacion, pension y registro oficial.
+          Recepcion: ingresos, salidas y ausencias. Y el panel de ocupacion,
+          pension y registro oficial.
         </p>
         <FormularioLogin destino={destino ?? "/"} />
       </div>

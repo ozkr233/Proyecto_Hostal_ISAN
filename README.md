@@ -5,8 +5,9 @@ con un ETL que carga los `.xlsx` existentes y vistas que recalculan los
 reportes que hoy son fórmulas escritas a mano.
 
 ```
-db/          DDL, en orden de ejecución (01 a 07)
+db/          DDL, en orden de ejecución (01 a 09)
 etl/         lectura de los Excel, normalización y carga
+dashboard/   la aplicación web: recepción (escribe) y panel (solo lee)
 Excels/      los libros originales, que el ETL nunca modifica
 ```
 
@@ -59,6 +60,9 @@ Tres esquemas: `staging` (crudo y auditable), `core` (normalizado), `rpt` (vista
 | `core.estadia_noche` | **Una fila por persona-noche.** Es la matriz de `R. OFICIAL` normalizada y la unidad que se cobra. |
 | `core.servicio_consumo` | Desayunos, almuerzos, cenas y colaciones. Unifica las columnas de pensión de las hojas diarias con la hoja `ALMUERZOS ISAM`. |
 | `core.estadia_evento` | Bitácora: cambio de sábanas, cambio de habitación, acreditación, avisos de salida. |
+| `core.estadia_ausencia` | **Permisos, vacaciones y licencias.** Días en que el huésped no duerme aquí pero puede conservar la cama. No generan noche. |
+| `core.usuario` | Quién usa el sistema. Cada ingreso y cada salida quedan a su nombre. |
+| `core.motivo_salida`, `core.tipo_ausencia` | Catálogos de los desplegables. El motivo nunca se teclea. |
 
 El total de noches, que en el Excel es un `COUNTA` por fila, aquí es un
 `count(*)` sobre los mismos datos que se muestran: no puede descuadrar.
@@ -74,6 +78,8 @@ El total de noches, que en el Excel es un `COUNTA` por fila, aquí es un
 | `rpt.vw_ocupacion_actual` | Quién está alojado ahora |
 | `rpt.vw_descuadre` | La fila 168 de `R. OFICIAL`, pero explicada |
 | `rpt.vw_calidad_datos` | — (nuevo: qué quedó para revisión humana) |
+| `rpt.vw_alojados` | — (nuevo: quién está alojado ahora, con su salida prevista y su ausencia vigente) |
+| `rpt.vw_ausencias_dia` | Las filas 97-99 de `REGISTRO OFICIAL`, que estaban **escritas a mano** |
 
 ## Lo que el ETL tuvo que resolver
 
@@ -370,7 +376,22 @@ respecto de Docker que ya están resueltas en el código:
    salida que ves es el del `tail`, no el del comando. Un fallo se ve como
    éxito. Revisa siempre los conteos al final.
 
-5. Consultar desde el *SQL Editor* del panel de Supabase, o con la misma URL
+5. Si la base **ya estaba desplegada** antes de que existiera la recepción,
+   basta con aplicar el archivo nuevo: está escrito con `IF NOT EXISTS` y
+   bloques que ignoran el duplicado, así que correrlo dos veces no cambia nada.
+
+   ```bash
+   docker compose exec -T db psql "$DATABASE_URL" -v ON_ERROR_STOP=1 < db/09_recepcion.sql
+   ```
+
+   Comprobado contra los datos reales de julio 2026: las doce cifras de
+   `rpt.vw_auditoria_resumen` quedan idénticas antes y después. Las
+   restricciones nuevas se acotan a `origen = 'WEB'` justamente para eso —las
+   filas que vinieron del Excel son sucias a propósito y sostienen las vistas de
+   auditoría—, y el ETL sigue funcionando sin tocar una línea porque el `DEFAULT`
+   de `origen` es `'ETL_EXCEL'`.
+
+6. Consultar desde el *SQL Editor* del panel de Supabase, o con la misma URL
    desde pgAdmin o DBeaver. En el *Table Editor* hay que cambiar el desplegable
    de `schema public` a `core`: en `public` no hay nada, a propósito.
 
@@ -387,11 +408,65 @@ respecto de Docker que ya están resueltas en el código:
 - La clave de la base va en `.env`, que está en `.gitignore`. No la pegues en
   ningún archivo que se versione.
 
+## Recepción
+
+`dashboard/` tiene dos mitades, y un selector en la cabecera cambia entre ellas.
+**Recepción es la portada**: es donde se trabaja.
+
+| Pantalla | Qué hace |
+|---|---|
+| `/` | Quién está alojado ahora. Marca en rojo a quien pasó su salida prevista y atenúa a quien está de permiso. |
+| `/ingreso` | Registra al huésped y su estadía. Empieza por el RUT: si ya se alojó antes, el resto se rellena solo. |
+| `/salida/[id]` | Cierra la estadía: fecha y hora, si devolvió las llaves y **cuándo**, y el motivo. |
+| `/ausencia/[id]` | Permiso, vacaciones o licencia sin cerrar la estadía. |
+| `/usuarios`, `/catalogos` | Solo `ADMIN`: alta de recepcionistas y edición de los desplegables. |
+
+Tres reglas que sostienen todo lo demás:
+
+1. **Las noches no se teclean.** `core.estadia_noche` —la unidad que se cobra—
+   la genera `core.sincronizar_noches()` a partir de las fechas, descontando las
+   ausencias. La noche de salida no se cuenta: del 3 al 6 son 3 noches. En el
+   Excel esa columna era un `COUNTA` escrito a mano, y por eso descuadraba.
+2. **El RUT es obligatorio y se valida** por módulo 11, con el mismo algoritmo
+   que `core.rut_es_valido` y que el ETL. Las 111 personas sin RUT válido que
+   denuncia la auditoría vienen de los libros; por la web no entra ninguna más.
+3. **Los motivos salen de un catálogo, nunca de un campo libre.** Lo que no está
+   en `core.motivo_salida` o `core.tipo_ausencia` no se puede registrar, y un
+   `ADMIN` agrega opciones desde `/catalogos` sin desplegar nada.
+
+### Permisos, vacaciones y licencias
+
+Antes no existían como dato. En `REGISTRO OFICIAL` de ALMAR WATER, las filas 97,
+98 y 99 llevan un conteo diario de `PERMISO`, `VACACIONES` y `LICENCIA` que suma
+1, 20 y 40 días-persona en julio. Las filas 89 a 93 de esa misma hoja —`DIA`,
+`NOCHE`, `GRAN TOTAL`— son fórmulas `COUNTIF`. **Las tres de ausencias son
+constantes tecleadas a mano**, y no hay nada debajo que las sostenga: la matriz
+de días solo admite `D`, `N` y `E`, y las hojas diarias de ALMAR WATER ni
+siquiera tienen columna `MOTIVO`. Son 61 días-persona que no se pueden atribuir
+a nadie.
+
+En ISAM el mismo hecho está disfrazado: la columna `MOTIVO` del bloque de salida
+trae `DESCANSO` y `CAMPAMENTO` 20 veces cada uno. Es decir, al trabajador que se
+ausenta se le registra una **salida completa** y al volver se le abre otra
+estadía. Eso es lo que produce los tramos discontinuos que documenta
+`db/04_core.sql` («JUAN CORREA tiene 18 noches repartidas en tres tramos»).
+
+`core.estadia_ausencia` lo convierte en un dato con nombre, fechas y responsable.
+Y captura la distinción que el Excel no puede expresar: **una ausencia no es una
+noche que cobrar, pero sí puede ser una cama ocupada** —`conserva_habitacion`—,
+así que el formulario de ingreso no se la ofrece a otro huésped.
+
+Los 61 días-persona de julio **no se reconstruyen hacia atrás**: esos números no
+tienen a quién atribuirse y adivinarlo sería inventar. `rpt.vw_ausencias_dia` da
+desde ahora la cifra que sí se puede defender.
+
 ## Dashboard
 
-`dashboard/` es una aplicación Next.js que lee la base y reemplaza la lectura
-del Excel: ocupación, pensión, el registro oficial y la calidad de la carga,
-todo filtrable por cualquier campo. **Solo lee**; nunca escribe.
+La otra mitad, en `/panel`, lee la base y reemplaza la lectura del Excel:
+ocupación, pensión, el registro oficial, las ausencias y la calidad de la carga,
+todo filtrable por cualquier campo. **Solo lee**; nunca escribe: usa el rol
+`dashboard_ro`, que no tiene `INSERT` ni `UPDATE` en ningún esquema. La escritura
+va por una conexión aparte, con el rol `app_rw` de `sql/app_rw.sql`.
 
 ```bash
 cd dashboard
@@ -416,23 +491,56 @@ filtrado. Sus números quedan como referencia de que el cálculo coincide.
 `vw_descuadre` sí se consulta tal cual, porque depende de
 `staging.registro_crudo`, que no se carga al cliente.
 
-### Rol de solo lectura
+### Los dos roles de base de datos
 
-Ejecutar `dashboard/sql/dashboard_ro.sql` una vez en el *SQL Editor* de
-Supabase y apuntar `DATABASE_URL` a ese rol. Por el pooler el usuario va como
-`dashboard_ro.<project-ref>`, no el rol pelado.
+Dos roles, dos conexiones, y la separación la hace Postgres y no la aplicación:
+
+| Rol | Archivo | Para qué |
+|---|---|---|
+| `dashboard_ro` | `sql/dashboard_ro.sql` | Todo el panel. `SELECT` y nada más. |
+| `app_rw` | `sql/app_rw.sql` | Solo las Server Actions de recepción. `INSERT`/`UPDATE` tabla por tabla. |
+
+`app_rw` **no tiene `DELETE`** salvo en `core.estadia_ausencia`, y tampoco toca
+`core.estadia_noche`: las noches las mueve `core.sincronizar_noches()`, que es
+`SECURITY DEFINER`. La unidad que se cobra no se puede modificar a mano desde la
+aplicación, ni siquiera por error. `staging` no está expuesto a ninguno de los
+dos.
+
+Ejecutar ambos `.sql` una vez en el *SQL Editor* de Supabase. Por el pooler el
+usuario va como `<rol>.<project-ref>`, no el rol pelado.
 
 ### Variables
 
 | | |
 |---|---|
-| `DATABASE_URL` | Transaction pooler, **puerto 6543** |
+| `DATABASE_URL` | Transaction pooler, **puerto 6543**, rol `dashboard_ro` |
+| `DATABASE_URL_RW` | Lo mismo con el rol `app_rw`. Si falta, cae a `DATABASE_URL` |
 | `AUTH_SECRET` | 32 bytes al azar; firma la cookie de sesión |
-| `DASHBOARD_PASSWORD_HASH` | `node scripts/hash.mjs "<clave>"` |
+| `DASHBOARD_PASSWORD_HASH` | Clave de emergencia: `node scripts/hash.mjs "<clave>"` |
 
-El acceso es una clave única contra un hash scrypt, con cookie `HttpOnly`
-firmada (JWT, 7 días) que verifica el middleware en toda ruta que no sea
-`/login`.
+### Entrar
+
+El acceso normal es **usuario y clave contra `core.usuario`**, con cookie
+`HttpOnly` firmada (JWT, 7 días) que el middleware verifica en toda ruta que no
+sea `/login`. La cookie lleva el id del usuario, y de ahí —no del navegador—
+salen `registrado_por` y `salida_registrada_por`.
+
+El primer usuario se crea así:
+
+```bash
+node scripts/hash.mjs "la clave que quieras"   # da el hash scrypt
+```
+
+```sql
+INSERT INTO core.usuario (usuario, nombre, clave_hash, rol, hostal_id)
+VALUES ('ana', 'Ana Miranda', '<el hash>', 'ADMIN',
+        (SELECT id FROM core.hostal WHERE codigo = '1724'));
+```
+
+O bien entrando con `DASHBOARD_PASSWORD_HASH`, que es una **puerta de
+emergencia**: da rol `ADMIN` para poder crear usuarios en `/usuarios`, pero no
+identifica a nadie y con ella el sistema **no deja registrar ingresos ni
+salidas**. Es deliberado: un registro sin responsable no sirve de nada.
 
 ### El pooler no tolera consultas encoladas
 
@@ -486,5 +594,6 @@ no los veía nadie.
 
 ## Fuera de alcance
 
-La aplicación de captura que reemplace operativamente el Excel. Con `core`
-estable, es un paso posterior sobre estas mismas tablas.
+Los datos de alimentación (`core.servicio_consumo`) todavía no se capturan desde
+la web: se siguen cargando con el ETL desde los Excel. El resto del registro
+—huéspedes, estadías, salidas y ausencias— ya no depende del libro.
