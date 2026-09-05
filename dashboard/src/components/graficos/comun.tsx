@@ -34,7 +34,7 @@ export function Leyenda({ series }: { series: Serie[] }) {
             style={{ background: s.color }}
             className="w-2.5 h-2.5 rounded-[3px] shrink-0"
           />
-          <span className="text-[11.5px] text-tinta-2">{s.nombre}</span>
+          <span className="text-[13px] text-tinta-2">{s.nombre}</span>
         </li>
       ))}
     </ul>
@@ -52,35 +52,41 @@ export function TarjetaGrafico({
   titulo,
   subtitulo,
   series,
+  controles,
   tabla,
   children,
 }: {
   titulo: string;
   subtitulo?: string;
   series?: Serie[];
+  /** Botonera propia de la tarjeta, a la izquierda del cambio a tabla. */
+  controles?: React.ReactNode;
   tabla: () => React.ReactNode;
   children: React.ReactNode;
 }) {
   const [verTabla, setVerTabla] = useState(false);
 
   return (
-    <section className="tarjeta p-3.5">
+    <section className="tarjeta p-5">
       <header className="flex items-start gap-3 mb-3">
         <div className="min-w-0">
-          <h2 className="text-[13.5px] font-semibold tracking-tight">{titulo}</h2>
+          <h2 className="text-[19px] font-semibold tracking-tight">{titulo}</h2>
           {subtitulo ? (
-            <p className="text-[11.5px] text-tinta-3 mt-0.5">{subtitulo}</p>
+            <p className="text-tinta-2 mt-0.5">{subtitulo}</p>
           ) : null}
         </div>
+        <div className="ml-auto shrink-0 flex items-center gap-1.5">
+        {controles}
         <button
           type="button"
           onClick={() => setVerTabla((v) => !v)}
           aria-pressed={verTabla}
-          className="ml-auto shrink-0 h-6 px-2 rounded border border-borde
-                     text-[11px] text-tinta-2 hover:bg-superficie-2 transition-colors"
+          className="h-8 px-2.5 rounded-md border border-borde
+                     text-[13px] text-tinta-2 hover:bg-superficie-2 transition-colors"
         >
           {verTabla ? "Ver grafico" : "Ver tabla"}
         </button>
+        </div>
       </header>
 
       {verTabla ? (
@@ -105,13 +111,13 @@ export function TablaSimple({
   filas: (string | number)[][];
 }) {
   return (
-    <table className="w-full text-[12px] border-collapse">
+    <table className="w-full text-[14px] border-collapse">
       <thead className="sticky top-0">
         <tr>
           {cabeceras.map((h, i) => (
             <th
               key={h}
-              className={`bg-superficie-2 border-b border-borde px-2 py-1.5 rotulo ${
+              className={`bg-superficie-2 border-b border-borde px-3 py-2 rotulo ${
                 i === 0 ? "text-left" : "text-right"
               }`}
             >
@@ -126,8 +132,8 @@ export function TablaSimple({
             {f.map((c, j) => (
               <td
                 key={j}
-                className={`px-2 py-1 ${
-                  j === 0 ? "" : "text-right tabular-nums"
+                className={`px-3 py-1.5 ${
+                  j === 0 ? "" : "text-right cifras"
                 }`}
               >
                 {typeof c === "number" ? numero(c) : c}

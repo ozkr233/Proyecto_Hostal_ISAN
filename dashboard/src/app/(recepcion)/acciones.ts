@@ -613,3 +613,43 @@ function codigoDesde(nombre: string): string {
     .replace(/^_+|_+$/g, "")
     .slice(0, 40);
 }
+
+/**
+ * Fija la capacidad de una habitacion.
+ *
+ * El Excel nunca trajo cuantas camas tiene cada cuarto, asi que las 67 quedaron
+ * en el DEFAULT 2 de la tabla. Mientras siga asi, el aviso de "sobre capacidad"
+ * del panel no prueba hacinamiento: prueba que falta cargar este dato. Por eso
+ * se puede corregir desde aqui, sin esperar a que alguien escriba un UPDATE a
+ * mano.
+ *
+ * core.habitacion es la unica tabla de catalogo estructural que la aplicacion
+ * escribe, y solo esta columna: el alta de una habitacion o de un hostal sigue
+ * siendo una decision que se toma por SQL.
+ */
+export async function fijarCapacidad(datos: FormData): Promise<void> {
+  await soloAdmin();
+  const id = Number(texto(datos, "id"));
+  const capacidad = Number(texto(datos, "capacidad"));
+  if (!id) return;
+  // 1..8 camas. Fuera de ese rango es un dedazo, no un cuarto.
+  if (!Number.isInteger(capacidad) || capacidad < 1 || capacidad > 8) return;
+
+  try {
+    await dbEscritura()`
+      UPDATE core.habitacion SET capacidad = ${capacidad} WHERE id = ${id}
+    `;
+  } catch (e) {
+    // 42501 = permission denied. Es el caso esperado mientras no se haya
+    // corrido el GRANT de dashboard/sql/app_rw.sql en la base: mejor decir que
+    // falta ese paso que dejar caer un "permission denied for table habitacion".
+    if ((e as ErrorPg).code === "42501") {
+      throw new Error(
+        "La base todavia no deja escribir la capacidad. Falta correr una vez, " +
+          "en el SQL Editor: GRANT UPDATE ON core.habitacion TO app_rw;",
+      );
+    }
+    throw e;
+  }
+  refrescarTodo();
+}

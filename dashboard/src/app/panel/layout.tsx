@@ -21,7 +21,7 @@ export default async function LayoutPanel({
 
   const datos = await obtenerDatos();
   return (
-    <DatosProvider datos={datos}>
+    <DatosProvider datos={datos} rol={sesion.rol}>
       <Cascaron nombre={sesion.nombre} rol={sesion.rol}>
         {children}
       </Cascaron>

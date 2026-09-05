@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { SelectorMes } from "@/components/BarraFiltros";
 import { useDatos } from "@/components/DatosProvider";
 import { Tabla, type Columna } from "@/components/Tabla";
 import { Kpi } from "@/components/Kpi";
@@ -95,18 +96,18 @@ export default function PaginaServicios() {
   );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-5 max-w-[1500px]">
       <header>
-        <h2 className="text-[14px] font-semibold tracking-tight">Servicios</h2>
-        <p className="text-[11.5px] text-tinta-3 mt-0.5 max-w-[80ch] leading-relaxed">
-          Pension de las hojas diarias y la hoja{" "}
-          <span className="codigo">ALMUERZOS ISAM</span>, en un solo registro.
-          Hay filas sin estadia: en ALMUERZOS come gente que no se aloja, y por
-          eso estos filtros miran las columnas del servicio y no la reserva.
+        <SelectorMes />
+        <p className="text-tinta-2 mt-1 ml-1.5 max-w-[74ch]">
+          Cada racion servida, con nombre y fecha. Los totales por empresa, que
+          son los que se cobran, estan en <strong>Mes</strong>; esto es el
+          detalle que los respalda. Hay comidas sin alojamiento detras: en los
+          almuerzos come gente que ese dia no se quedaba, y se sirvieron igual.
         </p>
       </header>
 
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
         {SERVICIOS_ORDEN.filter((t) => totales.has(t)).map((t) => (
           <Kpi key={t} rotulo={NOMBRE_SERVICIO[t]} valor={totales.get(t) ?? 0} />
         ))}

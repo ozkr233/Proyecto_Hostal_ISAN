@@ -22,12 +22,15 @@ export function Menu({
   children,
   ancho = 240,
   alinear = "izq",
+  sinBorde = false,
 }: {
   resumen: React.ReactNode;
   activo?: boolean;
   children: React.ReactNode;
   ancho?: number;
   alinear?: "izq" | "der";
+  /** Sin caja: el disparador es el propio texto. Lo usa el titulo de mes. */
+  sinBorde?: boolean;
 }) {
   const [abierto, setAbierto] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number; maxAlto: number }>({
@@ -107,16 +110,22 @@ export function Menu({
         type="button"
         aria-expanded={abierto}
         onClick={() => setAbierto((a) => !a)}
-        className={`h-8 px-2.5 rounded-md border text-[12.5px] flex items-center gap-1.5
-                    whitespace-nowrap transition-colors
-                    ${
-                      activo
-                        ? "border-acento bg-acento-suave text-tinta"
-                        : "border-borde bg-superficie hover:bg-superficie-2 text-tinta-2"
-                    }`}
+        className={
+          sinBorde
+            ? "px-1.5 py-0.5 rounded-md flex items-center gap-2 whitespace-nowrap hover:bg-superficie-2 transition-colors"
+            : `h-9 px-3 rounded-md border text-[14px] flex items-center gap-1.5
+               whitespace-nowrap transition-colors ${
+                 activo
+                   ? "border-acento bg-acento-suave text-tinta"
+                   : "border-borde bg-superficie hover:bg-superficie-2 text-tinta-2"
+               }`
+        }
       >
         {resumen}
-        <span aria-hidden className="text-tinta-3 text-[9px] leading-none">
+        <span
+          aria-hidden
+          className={`text-tinta-3 leading-none ${sinBorde ? "text-[11px]" : "text-[9px]"}`}
+        >
           ▼
         </span>
       </button>
@@ -172,7 +181,7 @@ export function MultiSelect({
     );
 
   return (
-    <Menu resumen={resumen} activo={seleccion.length > 0} ancho={ancho ?? 230}>
+    <Menu resumen={resumen} activo={seleccion.length > 0} ancho={ancho ?? 250}>
       <div className="flex items-center justify-between px-1 pb-1.5 mb-1 border-b border-borde">
         <span className="rotulo">{titulo}</span>
         {seleccion.length > 0 ? (
@@ -199,7 +208,7 @@ export function MultiSelect({
               onChange={() => alternar(o)}
               className="accent-[var(--acento)]"
             />
-            <span className="text-[12.5px] truncate">{o}</span>
+            <span className="text-[14px] truncate">{o}</span>
           </label>
         ))
       )}
@@ -221,7 +230,7 @@ export function Interruptor({
   return (
     <label
       htmlFor={id}
-      className={`h-8 px-2.5 rounded-md border text-[12.5px] flex items-center gap-2
+      className={`h-9 px-3 rounded-md border text-[14px] flex items-center gap-2
                   cursor-pointer whitespace-nowrap transition-colors
                   ${
                     activo
@@ -262,7 +271,7 @@ export function CampoTexto({
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
       style={{ width: ancho }}
-      className={`h-8 px-2.5 rounded-md border bg-superficie text-[12.5px]
+      className={`h-9 px-3 rounded-md border bg-superficie text-[14px]
                   placeholder:text-tinta-3 transition-colors
                   ${valor ? "border-acento" : "border-borde"}`}
     />
@@ -299,7 +308,7 @@ export function Etiqueta({
   } as const;
   return (
     <span
-      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium ${colores[tono]}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[12.5px] font-medium ${colores[tono]}`}
     >
       {children}
     </span>

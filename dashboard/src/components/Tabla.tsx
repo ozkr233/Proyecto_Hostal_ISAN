@@ -12,6 +12,7 @@ import {
   type TipoColumna,
   type Valor,
 } from "@/lib/filtros";
+import { aCSV, descargar } from "@/lib/csv";
 import { Menu } from "./ui";
 
 export type Columna<T> = {
@@ -218,34 +219,6 @@ function ControlFiltro({
 
 /* ========================================================================== */
 
-function aCSV<T>(columnas: Columna<T>[], filas: T[]): string {
-  const escapar = (v: Valor) => {
-    if (v === null || v === undefined) return "";
-    const s = typeof v === "boolean" ? (v ? "SI" : "NO") : String(v);
-    return /["\n\r;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-  };
-  const lineas = [columnas.map((c) => escapar(c.titulo)).join(";")];
-  for (const f of filas) {
-    lineas.push(columnas.map((c) => escapar(c.valor(f))).join(";"));
-  }
-  // BOM para que Excel en Windows lea bien los acentos, y ';' porque es el
-  // separador de lista de es-CL.
-  return "﻿" + lineas.join("\r\n");
-}
-
-function descargar(nombre: string, contenido: string) {
-  const url = URL.createObjectURL(
-    new Blob([contenido], { type: "text/csv;charset=utf-8" }),
-  );
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = nombre;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-/* ========================================================================== */
-
 export function Tabla<T>({
   columnas,
   filas,
@@ -323,75 +296,78 @@ export function Tabla<T>({
   return (
     <div className="tarjeta overflow-hidden">
       {/* Barra de la tabla */}
-      <div className="flex items-center gap-2 flex-wrap px-3 py-2 border-b border-borde">
-        <span className="text-[12.5px] text-tinta-2">
-          <strong className="text-tinta font-semibold tabular-nums">
+      <div className="flex items-center gap-3 flex-wrap px-3.5 py-2.5 border-b border-borde">
+        <span className="text-[14px] text-tinta-2">
+          <strong className="text-tinta font-semibold cifras">
             {filtradas.length.toLocaleString("es-CL")}
           </strong>{" "}
-          de {total.toLocaleString("es-CL")} filas
+          de {total.toLocaleString("es-CL")}
         </span>
 
         {hayFiltroColumna ? (
           <button
             type="button"
             onClick={() => setFiltros({})}
-            className="text-[11.5px] text-acento hover:underline"
+            className="text-[13px] text-acento hover:underline"
           >
             quitar filtros de columna
           </button>
         ) : null}
 
-        <div className="ml-auto flex items-center gap-2">
-          <Menu resumen="Columnas" ancho={215} alinear="der">
-            <div className="flex items-center justify-between px-1 pb-1.5 mb-1 border-b border-borde">
-              <span className="rotulo">Mostrar</span>
+        <div className="ml-auto">
+          {/* Un solo menu para lo de experto. Columnas y CSV estaban siempre a
+              la vista, compitiendo con el dato; se usan de vez en cuando. */}
+          <Menu resumen="Acciones" ancho={230} alinear="der">
+            <p className="rotulo px-1 pb-1.5 mb-1 border-b border-borde">
+              Columnas visibles
+            </p>
+            <div className="max-h-[240px] overflow-auto scroll-fino">
+              {columnas.map((c) => (
+                <label
+                  key={c.clave}
+                  className="flex items-center gap-2.5 px-1 py-1.5 rounded-md hover:bg-superficie-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={!ocultas.has(c.clave)}
+                    onChange={() =>
+                      setOcultas((s) => {
+                        const n = new Set(s);
+                        if (n.has(c.clave)) n.delete(c.clave);
+                        else n.add(c.clave);
+                        return n;
+                      })
+                    }
+                    className="accent-[var(--acento)]"
+                  />
+                  <span className="text-[14px] truncate">{c.titulo}</span>
+                </label>
+              ))}
+            </div>
+
+            <div className="mt-1.5 pt-1.5 border-t border-borde flex flex-col gap-0.5">
               <button
                 type="button"
                 onClick={() => setOcultas(new Set())}
-                className="text-[11px] text-acento hover:underline"
+                className="w-full text-left px-1 py-1.5 rounded-md hover:bg-superficie-2"
               >
-                todas
+                Mostrar todas las columnas
+              </button>
+              <button
+                type="button"
+                onClick={() => descargar(nombreArchivo, aCSV(visiblesCols, filtradas))}
+                className="w-full text-left px-1 py-1.5 rounded-md hover:bg-superficie-2"
+              >
+                Descargar CSV
               </button>
             </div>
-            {columnas.map((c) => (
-              <label
-                key={c.clave}
-                className="flex items-center gap-2 px-1 py-[5px] rounded hover:bg-superficie-2 cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  checked={!ocultas.has(c.clave)}
-                  onChange={() =>
-                    setOcultas((s) => {
-                      const n = new Set(s);
-                      if (n.has(c.clave)) n.delete(c.clave);
-                      else n.add(c.clave);
-                      return n;
-                    })
-                  }
-                  className="accent-[var(--acento)]"
-                />
-                <span className="text-[12.5px] truncate">{c.titulo}</span>
-              </label>
-            ))}
           </Menu>
-
-          <button
-            type="button"
-            onClick={() =>
-              descargar(nombreArchivo, aCSV(visiblesCols, filtradas))
-            }
-            className="h-8 px-2.5 rounded-md border border-borde bg-superficie
-                       hover:bg-superficie-2 text-[12.5px] text-tinta-2"
-          >
-            Descargar CSV
-          </button>
         </div>
       </div>
 
       {/* Tabla */}
       <div className="overflow-auto scroll-fino max-h-[calc(100vh-260px)]">
-        <table className="w-full border-collapse text-[12.5px]">
+        <table className="w-full border-collapse text-[14px]">
           <thead className="sticky top-0 z-20">
             <tr>
               {visiblesCols.map((c) => {
@@ -402,7 +378,7 @@ export function Tabla<T>({
                   <th
                     key={c.clave}
                     style={{ minWidth: c.ancho ?? 110 }}
-                    className="bg-superficie-2 border-b border-borde px-2 py-1.5
+                    className="bg-superficie-2 border-b border-borde px-3 py-2
                                text-left align-bottom font-normal"
                   >
                     <div className="flex items-center gap-1">
@@ -469,8 +445,8 @@ export function Tabla<T>({
                 {visiblesCols.map((c) => (
                   <td
                     key={c.clave}
-                    className={`px-2 py-[5px] align-top ${
-                      c.numerica ? "text-right tabular-nums" : ""
+                    className={`px-3 py-2 align-top ${
+                      c.numerica ? "text-right cifras" : ""
                     }`}
                   >
                     {c.render ? c.render(fila) : celda(c.valor(fila))}

@@ -67,3 +67,63 @@ export function horaValida(h: string): boolean {
   const [hh, mm] = h.split(":").map(Number);
   return hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59;
 }
+
+/**
+ * Dias consecutivos entre dos fechas, ambas incluidas.
+ *
+ * Se llama `rangoDeDias` y no `diasEntre` porque ese nombre ya esta tomado
+ * arriba por la version que devuelve un numero. Aritmetica en UTC: sin zona
+ * que corra el dia.
+ *
+ * Lo usan la matriz del registro oficial y la grilla de ocupacion, que tienen
+ * que dibujar EXACTAMENTE el mismo eje de columnas.
+ */
+export function rangoDeDias(desde: string, hasta: string): string[] {
+  const salida: string[] = [];
+  const fin = Date.parse(hasta + "T00:00:00Z");
+  for (let t = Date.parse(desde + "T00:00:00Z"); t <= fin; t += 86_400_000) {
+    salida.push(new Date(t).toISOString().slice(0, 10));
+  }
+  return salida;
+}
+
+/** Ultimo dia del mes, sin pasar por Date local: 'YYYY-MM' -> 'YYYY-MM-DD'. */
+export function finDeMes(mes: string): string {
+  const [a, m] = mes.split("-").map(Number);
+  const dias = new Date(Date.UTC(a, m, 0)).getUTCDate();
+  return `${mes}-${String(dias).padStart(2, "0")}`;
+}
+
+/** Primer dia del mes: 'YYYY-MM' -> 'YYYY-MM-01'. */
+export function inicioDeMes(mes: string): string {
+  return `${mes}-01`;
+}
+
+/**
+ * Dia de la semana de una fecha 'YYYY-MM-DD': 0 domingo … 6 sabado.
+ * En UTC, igual que todo lo demas aqui.
+ */
+export function diaSemana(fecha: string): number {
+  const [a, m, d] = fecha.split("-").map(Number);
+  return new Date(Date.UTC(a, m - 1, d)).getUTCDay();
+}
+
+/** Inicial del dia de la semana, para las cabeceras de las grillas de 31 columnas. */
+export const INICIAL_DIA = ["D", "L", "M", "M", "J", "V", "S"] as const;
+
+/** ¿Cae en sabado o domingo? Las grillas los sombrean para poder ubicarse. */
+export function esFinDeSemana(fecha: string): boolean {
+  const d = diaSemana(fecha);
+  return d === 0 || d === 6;
+}
+
+export const NOMBRE_MES = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+] as const;
+
+/** 'YYYY-MM' -> 'julio 2026'. */
+export function nombreDeMes(mes: string): string {
+  const [a, m] = mes.split("-");
+  return `${NOMBRE_MES[Number(m) - 1]} ${a}`;
+}

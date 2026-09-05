@@ -1,15 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo } from "react";
+import { SelectorMes } from "@/components/BarraFiltros";
 import { useDatos } from "@/components/DatosProvider";
 import { Tabla, type Columna } from "@/components/Tabla";
-import { Etiqueta } from "@/components/ui";
+import { Etiqueta, Interruptor } from "@/components/ui";
 import { fechaLarga, formatearRut } from "@/lib/formato";
 import { NOMBRE_ENTREGA } from "@/lib/paleta";
 import type { Estadia } from "@/lib/types";
 
 export default function PaginaEstadias() {
-  const { estadias, nochesPorEstadia, todo } = useDatos();
+  const { estadias, nochesPorEstadia, todo, filtros, ponerFiltros } = useDatos();
 
   const columnas = useMemo<Columna<Estadia>[]>(
     () => [
@@ -19,6 +21,15 @@ export default function PaginaEstadias() {
         tipo: "texto",
         ancho: 200,
         valor: (e) => e.persona,
+        render: (e) => (
+          <Link
+            href={`/panel/huesped/${e.persona_id}`}
+            className="hover:text-acento hover:underline"
+            title="Ver ficha del huesped"
+          >
+            {e.persona}
+          </Link>
+        ),
       },
       {
         clave: "rut",
@@ -43,7 +54,7 @@ export default function PaginaEstadias() {
         render: (e) => <span className="codigo">{e.hostal}</span> },
       {
         clave: "habitacion",
-        titulo: "Hab.",
+        titulo: "Cuarto",
         tipo: "texto",
         ancho: 72,
         valor: (e) => e.habitacion,
@@ -165,16 +176,27 @@ export default function PaginaEstadias() {
   );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-5 max-w-[1500px]">
       <header>
-        <h2 className="text-[14px] font-semibold tracking-tight">Estadias</h2>
-        <p className="text-[11.5px] text-tinta-3 mt-0.5 max-w-[76ch] leading-relaxed">
-          Una fila por reserva. Cada columna se filtra desde el menu <span aria-hidden>⋯</span> de
-          su cabecera, y las columnas ocultas (cargo, chip, llaves, patente,
-          procedencia en el Excel) se activan en <strong>Columnas</strong>. El
-          CSV baja lo filtrado, no la tabla entera.
+        <SelectorMes />
+        <p className="text-tinta-2 mt-1 ml-1.5 max-w-[74ch]">
+          Un alojamiento por fila. Toca un nombre para ver su ficha completa.
+          Cada columna se puede filtrar desde su cabecera, y en{" "}
+          <strong>Acciones</strong> estan las columnas que vienen ocultas y la
+          descarga.
         </p>
       </header>
+
+      {/* Vive aqui y no en la barra global: preguntar si una fila quedo a
+          medias es una pregunta sobre la carga, y solo tiene sentido frente a
+          la tabla que la muestra. */}
+      <div>
+        <Interruptor
+          etiqueta="Solo los que hay que revisar"
+          activo={filtros.soloRevision}
+          onChange={(soloRevision) => ponerFiltros({ soloRevision })}
+        />
+      </div>
 
       <Tabla
         columnas={columnas}

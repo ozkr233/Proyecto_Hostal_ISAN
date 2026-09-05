@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { salir } from "@/app/login/acciones";
 import type { Rol } from "@/lib/sesion";
+import { Menu } from "./ui";
 
 /* --------------------------------------------------------------------------
-   Piezas compartidas por las dos areas: el mesón de recepcion y el panel.
+   Piezas compartidas por las dos areas: el meson de recepcion y el panel.
    -------------------------------------------------------------------------- */
 
 export function BotonTema() {
@@ -37,14 +38,13 @@ export function BotonTema() {
     <button
       type="button"
       onClick={cambiar}
-      title={tema === "oscuro" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
-      className="h-7 w-7 grid place-items-center rounded-md border border-borde
-                 text-tinta-2 hover:bg-superficie-2 transition-colors"
+      className="w-full text-left px-2 py-1.5 rounded-md hover:bg-superficie-2
+                 flex items-center gap-2.5 transition-colors"
     >
-      <span aria-hidden className="text-[12px]">
+      <span aria-hidden className="w-4 text-center text-tinta-3">
         {tema === "oscuro" ? "☀" : "☾"}
       </span>
-      <span className="sr-only">Cambiar tema</span>
+      {tema === "oscuro" ? "Tema claro" : "Tema oscuro"}
     </button>
   );
 }
@@ -69,10 +69,10 @@ export function SelectorArea() {
   const enPanel = ruta.startsWith("/panel");
 
   const clase = (activo: boolean) =>
-    `px-2.5 h-7 grid place-items-center rounded text-[12px] transition-colors ${
+    `px-3 h-8 grid place-items-center rounded text-[14px] transition-colors ${
       activo
         ? "bg-superficie text-tinta font-medium shadow-sm"
-        : "text-tinta-3 hover:text-tinta-2"
+        : "text-tinta-2 hover:text-tinta"
     }`;
 
   return (
@@ -85,7 +85,7 @@ export function SelectorArea() {
         Recepcion
       </Link>
       <Link href="/panel" aria-current={enPanel ? "page" : undefined} className={clase(enPanel)}>
-        Dashboard
+        Informes
       </Link>
     </div>
   );
@@ -94,9 +94,9 @@ export function SelectorArea() {
 /** Quien esta usando el sistema, y el boton de salir. */
 export function Usuario({ nombre, rol }: { nombre: string; rol: Rol }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <span
-        className="text-[11.5px] text-tinta-3 hidden sm:inline max-w-[16ch] truncate"
+        className="text-[13px] text-tinta-2 hidden sm:inline max-w-[16ch] truncate"
         title={rol === "ADMIN" ? `${nombre} (administrador)` : nombre}
       >
         {nombre}
@@ -104,12 +104,96 @@ export function Usuario({ nombre, rol }: { nombre: string; rol: Rol }) {
       <form action={salir}>
         <button
           type="submit"
-          className="h-7 px-2 rounded-md border border-borde text-[11.5px]
+          className="h-9 px-3 rounded-md border border-borde text-[14px]
                      text-tinta-2 hover:bg-superficie-2 transition-colors"
         >
           Salir
         </button>
       </form>
     </div>
+  );
+}
+
+/**
+ * Todo lo que no es navegar, en un solo sitio: actualizar los datos, ir a la
+ * recepcion, revisar la calidad de la carga, cambiar el tema y salir.
+ *
+ * Estaban los cinco sueltos en la cabecera, compitiendo con las pestanas por
+ * la atencion. Ninguno se usa mas de un par de veces al dia.
+ */
+export function MenuCuenta({
+  nombre,
+  rol,
+  cargando,
+  onActualizar,
+}: {
+  nombre: string;
+  rol: Rol;
+  cargando: boolean;
+  onActualizar: () => void;
+}) {
+  const item =
+    "w-full text-left px-2 py-1.5 rounded-md hover:bg-superficie-2 flex items-center gap-2.5 transition-colors";
+  const icono = "w-4 text-center text-tinta-3";
+
+  return (
+    <Menu
+      resumen={
+        <span className="flex items-center gap-2">
+          <span
+            aria-hidden
+            className="h-7 w-7 rounded-full bg-superficie-2 border border-borde
+                       grid place-items-center text-[13px] font-semibold"
+          >
+            {nombre.trim().charAt(0).toUpperCase()}
+          </span>
+          <span className="hidden sm:inline max-w-[14ch] truncate text-[14px]">
+            {nombre}
+          </span>
+        </span>
+      }
+      ancho={230}
+      alinear="der"
+      sinBorde
+    >
+      <p className="px-2 pb-1.5 mb-1 border-b border-borde">
+        <span className="block truncate font-medium">{nombre}</span>
+        <span className="block text-[13px] text-tinta-3">
+          {rol === "ADMIN" ? "Administrador" : "Recepcion"}
+        </span>
+      </p>
+
+      <button type="button" onClick={onActualizar} disabled={cargando} className={item}>
+        <span aria-hidden className={icono}>
+          {"↻"}
+        </span>
+        {cargando ? "Actualizando..." : "Actualizar datos"}
+      </button>
+
+      <Link href="/" className={item}>
+        <span aria-hidden className={icono}>
+          {"⌂"}
+        </span>
+        Ir a recepcion
+      </Link>
+
+      <Link href="/panel/calidad" className={item}>
+        <span aria-hidden className={icono}>
+          {"⚠"}
+        </span>
+        Revisar la carga
+      </Link>
+
+      <BotonTema />
+
+      <form action={salir} className="mt-1 pt-1 border-t border-borde">
+        <button type="submit" className={item}>
+          <span aria-hidden className={icono}>
+            {"→"}
+          </span>
+          Cerrar sesion
+        </button>
+      </form>
+    </Menu>
   );
 }

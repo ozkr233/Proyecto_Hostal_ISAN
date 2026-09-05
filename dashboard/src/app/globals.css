@@ -3,41 +3,47 @@
 /* ==========================================================================
    Identidad
    --------------------------------------------------------------------------
-   El libro de origen es una matriz: en 'R. OFICIAL' cada persona es una fila,
-   cada dia del mes una columna, y cada celda una sola letra escrita a mano
-   (D / N / E). Esa celda es la unidad del diseno. Se repite como marca en la
-   navegacion, en los KPI y, en su casa, en la grilla del registro oficial.
+   Esto administra camas: cuatro hostales, 67 cuartos y gente que rota en turno
+   de dia o de noche, que se le cobra por noche y por racion a la empresa
+   mandante. Quien mira esta pantalla administra alojamiento, no consulta una
+   base de datos, y la interfaz tiene que sonar a lo primero.
 
-   Los codigos -RUT, folio, habitacion, marcas- van en monoespaciada: no son
-   palabras, son identificadores, y asi se escanean de una pasada.
-   Las etiquetas chicas van en mayuscula con tracking abierto, como los
-   encabezados del propio Excel.
+   El principio que ordena todo: EL COLOR SATURA SOLO DONDE HAY DATO. La
+   interfaz es tinta sobre papel -grises frios, un unico acento- y el color
+   fuerte queda reservado a los graficos, a las marcas de turno y a la escala
+   de ocupacion. Antes no era asi: el acento de interfaz (#1c5cab) era
+   practicamente la serie 1 (#2a78d6), y una pestana activa se leia igual que
+   una barra de datos.
 
-   Los colores de serie son la paleta categorica validada de la skill dataviz
-   (adyacentes CVD ΔE 9.1 claro / 8.4 oscuro). No inventar tonos nuevos.
+   La paleta categorica es la validada de la skill dataviz y no se toca. Se
+   revalido contra las superficies nuevas (#FFFFFF claro, #171F26 oscuro) y
+   pasa los cinco controles. No inventar tonos nuevos.
    ========================================================================== */
 
 :root {
   color-scheme: light;
 
-  --plano: #f9f9f7;
-  --superficie: #fcfcfb;
-  --superficie-2: #f2f1ed;
-  --superficie-3: #e9e8e2;
+  /* Papel frio, no crema. */
+  --plano: #f0f3f5;
+  --superficie: #ffffff;
+  --superficie-2: #e7ecf0;
+  --superficie-3: #dce3e9;
 
-  --tinta: #0b0b0b;
-  --tinta-2: #52514e;
-  --tinta-3: #898781;
+  /* Pizarra profunda. Un negro apenas teindo leeria como plantilla. */
+  --tinta: #16202b;
+  --tinta-2: #4a5a69;
+  --tinta-3: #5f6e7c;
 
-  --linea: #e1e0d9;
-  --eje: #c3c2b7;
-  --borde: rgba(11, 11, 11, 0.1);
+  --linea: #dde4ea;
+  --eje: #b6c2cc;
+  --borde: rgba(22, 32, 43, 0.14);
 
-  /* Acento de interfaz: foco, seleccion, pestana activa. Nunca como relleno
-     dentro de un grafico, para que no se confunda con la serie 1. */
-  --acento: #1c5cab;
+  /* Verde azulado profundo, deliberadamente fuera de la gama categorica -que
+     ya ocupa azul, naranja, verde, ambar, rosa, violeta y rojo-. Solo foco,
+     pestana activa, enlaces y accion primaria. Nunca dentro de un grafico. */
+  --acento: #0b6b70;
   --acento-tinta: #ffffff;
-  --acento-suave: #e8f0fb;
+  --acento-suave: #dcedee;
 
   --s1: #2a78d6;
   --s2: #eb6834;
@@ -48,36 +54,38 @@
   --s7: #4a3aa7;
   --s8: #e34948;
 
-  --bien: #0ca30c;
-  --aviso: #fab219;
-  --serio: #ec835a;
-  --critico: #d03b3b;
+  /* Estado. Se usan como color de TEXTO, asi que llegan a 4.5:1 sobre papel;
+     los tonos anteriores se quedaban en 3.35 y 2.64. Nunca van solos: siempre
+     con simbolo y palabra. */
+  --bien: #0f7a2e;
+  --aviso: #8a6100;
+  --serio: #b5501f;
+  --critico: #b32626;
 
-  --fuente: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono",
-    Menlo, monospace;
+  --fuente: var(--plex-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: var(--plex-mono), ui-monospace, "Cascadia Mono", Menlo, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --plano: #0d0d0d;
-    --superficie: #1a1a19;
-    --superficie-2: #232322;
-    --superficie-3: #2c2c2a;
+    --plano: #0f151a;
+    --superficie: #171f26;
+    --superficie-2: #1f2932;
+    --superficie-3: #29343e;
 
-    --tinta: #ffffff;
-    --tinta-2: #c3c2b7;
-    --tinta-3: #898781;
+    --tinta: #f2f6f9;
+    --tinta-2: #a9b8c4;
+    --tinta-3: #7b8a98;
 
-    --linea: #2c2c2a;
-    --eje: #383835;
-    --borde: rgba(255, 255, 255, 0.1);
+    --linea: #29343e;
+    --eje: #3c4a56;
+    --borde: rgba(242, 246, 249, 0.14);
 
-    --acento: #3987e5;
-    --acento-tinta: #06121f;
-    --acento-suave: #17273a;
+    --acento: #3fb0b8;
+    --acento-tinta: #08181a;
+    --acento-suave: #123336;
 
     --s1: #3987e5;
     --s2: #d95926;
@@ -87,28 +95,33 @@
     --s6: #008300;
     --s7: #9085e9;
     --s8: #e66767;
+
+    --bien: #4ed07a;
+    --aviso: #e3b341;
+    --serio: #f0a17e;
+    --critico: #f0706e;
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --plano: #0d0d0d;
-  --superficie: #1a1a19;
-  --superficie-2: #232322;
-  --superficie-3: #2c2c2a;
+  --plano: #0f151a;
+  --superficie: #171f26;
+  --superficie-2: #1f2932;
+  --superficie-3: #29343e;
 
-  --tinta: #ffffff;
-  --tinta-2: #c3c2b7;
-  --tinta-3: #898781;
+  --tinta: #f2f6f9;
+  --tinta-2: #a9b8c4;
+  --tinta-3: #7b8a98;
 
-  --linea: #2c2c2a;
-  --eje: #383835;
-  --borde: rgba(255, 255, 255, 0.1);
+  --linea: #29343e;
+  --eje: #3c4a56;
+  --borde: rgba(242, 246, 249, 0.14);
 
-  --acento: #3987e5;
-  --acento-tinta: #06121f;
-  --acento-suave: #17273a;
+  --acento: #3fb0b8;
+  --acento-tinta: #08181a;
+  --acento-suave: #123336;
 
   --s1: #3987e5;
   --s2: #d95926;
@@ -118,6 +131,11 @@
   --s6: #008300;
   --s7: #9085e9;
   --s8: #e66767;
+
+  --bien: #4ed07a;
+  --aviso: #e3b341;
+  --serio: #f0a17e;
+  --critico: #f0706e;
 }
 
 @theme inline {
@@ -146,60 +164,67 @@
   border-color: var(--borde);
 }
 
+/* Base 15px, no 13px: la escala anterior dejaba casi todo entre 11 y 12.5, y
+   eso, mas que denso, se leia como tablero de analista. */
 html,
 body {
   background: var(--plano);
   color: var(--tinta);
   font-family: var(--fuente);
-  font-size: 13px;
+  font-size: 15px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
 :focus-visible {
   outline: 2px solid var(--acento);
   outline-offset: 2px;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 /* -------------------------------------------------------------------------
-   Etiqueta chica: el encabezado del Excel, en minuscula de tamano y mayuscula
-   de forma. Es el rotulo de toda la interfaz.
+   Rotulo. Antes iba en VERSALITAS con tracking abierto, imitando los
+   encabezados del Excel; era el rasgo que mas hacia parecer esto una
+   herramienta de analisis. Ahora es caja normal.
    ------------------------------------------------------------------------- */
 .rotulo {
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--tinta-3);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tinta-2);
   line-height: 1.4;
 }
 
-/* Identificadores: RUT, folio, habitacion, fechas en tabla. */
+/* Monoespaciada SOLO para identificadores que se cotejan caracter a caracter:
+   RUT y folio. Las fechas, los numeros de cuarto y las cantidades van en la
+   sans con cifras tabulares; mono en cualquier dato menudo es decorativo. */
 .codigo {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
-  font-size: 0.95em;
+  font-size: 0.94em;
+}
+
+.cifras {
+  font-variant-numeric: tabular-nums;
 }
 
 .tarjeta {
   background: var(--superficie);
   border: 1px solid var(--borde);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 /* -------------------------------------------------------------------------
-   La marca: una celda del libro. 4px de radio, igual que el extremo de dato
-   de las barras, para que grilla y graficos hablen el mismo idioma.
+   La marca: una celda del libro. Crece de 18 a 22px con la escala nueva.
    ------------------------------------------------------------------------- */
 .marca {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 4px;
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 600;
   line-height: 1;
   color: #fff;
@@ -217,6 +242,99 @@ body {
 }
 .marca-vacia {
   background: var(--superficie-2);
+}
+
+/* Ausencia: no es una noche, pero tampoco un hueco. Un permiso y un "todavia
+   no llegaba" se veian identicos. Rayado, no color: tiene que leerse tambien
+   en blanco y negro y con vision de color reducida. */
+.marca-ausente {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--superficie-2) 0 3px,
+    var(--eje) 3px 4px
+  );
+}
+
+/* La misma persona con dos noches el mismo dia: esta anotada en dos hostales a
+   la vez. No es un detalle de dibujo, es una noche que se cobra dos veces. */
+.marca-doble {
+  outline: 2px solid var(--critico);
+  outline-offset: -2px;
+}
+
+/* Sabado y domingo en las rejillas largas. Sin esto hay que contar con el dedo
+   para saber en que dia se esta parado. */
+.dia-finde {
+  background: color-mix(in oklab, var(--superficie-2) 60%, transparent);
+}
+
+/* -------------------------------------------------------------------------
+   Escala SECUENCIAL de ocupacion: un solo tono, claro a oscuro.
+   Codifica magnitud -cuanta gente hay-, no identidad, asi que no toca la
+   paleta categorica: repartir tonos distintos por cantidad seria re-encodar
+   con identidad algo que es una cantidad.
+
+   Los pasos se mezclan contra --superficie, asi que en tema oscuro el ancla se
+   invierte sola y la rampa sigue siendo monotona en luminosidad.
+
+   Se declara como variables porque la comparten tres piezas: el calendario del
+   mes, el tablero de cuartos y la rejilla habitacion por dia. Si divergieran,
+   dos pantallas dirian lo mismo con colores distintos.
+   ------------------------------------------------------------------------- */
+:root {
+  --rampa-0: var(--superficie-2);
+  --rampa-1: color-mix(in oklab, var(--s1) 20%, var(--superficie));
+  --rampa-2: color-mix(in oklab, var(--s1) 45%, var(--superficie));
+  --rampa-3: color-mix(in oklab, var(--s1) 70%, var(--superficie));
+  --rampa-4: color-mix(in oklab, var(--s1) 92%, var(--superficie));
+  --rampa-ink-alto: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --rampa-ink-alto: var(--tinta);
+  }
+}
+:root[data-theme="dark"] {
+  --rampa-ink-alto: var(--tinta);
+}
+
+.ocupa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--tinta);
+}
+
+.ocupa-0 {
+  background: var(--rampa-0);
+}
+.ocupa-1 {
+  background: var(--rampa-1);
+}
+.ocupa-2 {
+  background: var(--rampa-2);
+}
+.ocupa-3 {
+  background: var(--rampa-3);
+  color: var(--rampa-ink-alto);
+}
+.ocupa-4 {
+  background: var(--rampa-4);
+  color: var(--rampa-ink-alto);
+}
+
+/* Mas gente que camas declaradas. Canal de ESTADO, encima del paso que toque:
+   nunca por color solo, siempre con la cifra al lado. */
+.ocupa-exceso {
+  outline: 2px solid var(--critico);
+  outline-offset: -2px;
 }
 
 /* Barras de desplazamiento discretas en las tablas anchas. */

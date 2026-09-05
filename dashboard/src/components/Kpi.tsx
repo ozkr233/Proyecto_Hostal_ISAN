@@ -25,12 +25,20 @@ export function Kpi({
         : "text-tinta";
 
   return (
-    <div className="tarjeta px-3 py-2.5">
+    <div
+      className={`border-l-2 pl-3.5 ${
+        tono === "neutro" ? "border-borde" : "border-serio"
+      }`}
+    >
       <p className="rotulo">{rotulo}</p>
-      <p className={`text-[24px] font-semibold tracking-tight leading-[1.15] mt-0.5 ${color}`}>
+      <p
+        className={`text-[28px] font-semibold tracking-tight leading-tight cifras mt-0.5 ${color}`}
+      >
         {typeof valor === "number" ? numero(valor) : valor}
       </p>
-      {nota ? <p className="text-[11px] text-tinta-3 mt-0.5">{nota}</p> : null}
+      {nota ? (
+        <p className="text-[13px] text-tinta-3 mt-0.5 leading-snug">{nota}</p>
+      ) : null}
     </div>
   );
 }
@@ -52,12 +60,12 @@ export function Hero({
   nota: string;
 }) {
   return (
-    <div className="tarjeta px-4 py-3.5 flex flex-col justify-center h-full">
+    <div className="tarjeta px-5 py-4 flex flex-col justify-center h-full">
       <p className="rotulo">{rotulo}</p>
-      <p className="text-[48px] font-semibold tracking-tight leading-[1.02] mt-1">
+      <p className="text-[52px] font-semibold tracking-[-0.02em] leading-[1.02] mt-1 cifras">
         {numero(valor)}
       </p>
-      <p className="text-[11.5px] text-tinta-3 mt-1.5 leading-snug">{nota}</p>
+      <p className="text-[13px] text-tinta-3 mt-1.5 leading-snug">{nota}</p>
     </div>
   );
 }

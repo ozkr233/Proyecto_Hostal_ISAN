@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useDatos } from "@/components/DatosProvider";
 import { Kpi } from "@/components/Kpi";
 import { Tabla, type Columna } from "@/components/Tabla";
-import { Etiqueta } from "@/components/ui";
+import { Etiqueta, MultiSelect } from "@/components/ui";
 import { fechaLarga, formatearRut, numero } from "@/lib/formato";
 import { NOMBRE_SERVICIO } from "@/lib/paleta";
 import type { Descuadre, Rechazo, Servicio } from "@/lib/types";
@@ -16,44 +16,45 @@ import type { Descuadre, Rechazo, Servicio } from "@/lib/types";
 const VENTANA = { desde: "2026-02-01", hasta: "2026-07-31" };
 
 export default function PaginaCalidad() {
-  const { estadias, personas, rechazos, servicios, todo } = useDatos();
+  const { estadias, personas, rechazos, servicios, todo, filtros, ponerFiltros, catalogo } =
+    useDatos();
 
   const indicadores = useMemo(
     () => [
       {
-        rotulo: "Personas sin RUT",
+        rotulo: "Sin RUT",
         valor: personas.filter((p) => !p.rut).length,
-        nota: "se identifican por nombre normalizado",
+        nota: "se identifican por su nombre",
       },
       {
         rotulo: "RUT invalido",
         valor: personas.filter((p) => p.rut && !p.rut_valido).length,
-        nota: "no pasan el modulo 11; se cargan igual",
+        nota: "el digito verificador no calza",
       },
       {
         rotulo: "Sin fecha de ingreso",
         valor: estadias.filter((e) => !e.fecha_ingreso).length,
-        nota: "el Excel solo trae la salida",
+        nota: "solo se anoto la salida",
       },
       {
         rotulo: "Sin fecha de salida",
         valor: estadias.filter((e) => !e.fecha_salida).length,
-        nota: "siguen alojados o no se anoto",
+        nota: "siguen alojados, o no se anoto",
       },
       {
-        rotulo: "Marcadas para revision",
+        rotulo: "Marcados para revisar",
         valor: estadias.filter((e) => e.requiere_revision).length,
-        nota: "la fila no se resolvio del todo",
+        nota: "el registro quedo a medias",
       },
       {
-        rotulo: "Sin habitacion",
+        rotulo: "Sin cuarto anotado",
         valor: estadias.filter((e) => !e.habitacion).length,
-        nota: "la celda venia vacia",
+        nota: "no se anoto donde durmieron",
       },
       {
-        rotulo: "Filas rechazadas",
+        rotulo: "No se pudieron cargar",
         valor: rechazos.length,
-        nota: "no se pudieron promover a core",
+        nota: "quedaron fuera de la base",
       },
     ],
     [estadias, personas, rechazos],
@@ -147,7 +148,7 @@ export default function PaginaCalidad() {
       },
       {
         clave: "tipo_servicio",
-        titulo: "Servicio",
+        titulo: "Comida",
         tipo: "enum",
         ancho: 118,
         valor: (s) => s.tipo_servicio,
@@ -171,21 +172,44 @@ export default function PaginaCalidad() {
   );
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-7 max-w-[1500px]">
       <header>
-        <h2 className="text-[14px] font-semibold tracking-tight">
-          Calidad de datos
-        </h2>
-        <p className="text-[11.5px] text-tinta-3 mt-0.5 max-w-[80ch] leading-relaxed">
-          Lo que quedo para revision humana. Nada se invento al cargar: cada
-          fila que no se pudo resolver esta listada con su motivo, y cada
-          descuadre entre el libro y la base aparece con su fecha.
+        <h1 className="text-[24px] font-semibold tracking-tight">
+          Estado de los datos
+        </h1>
+        <p className="text-tinta-2 mt-1 max-w-[74ch]">
+          Lo que quedo por revisar a mano. Nada se invento al cargar los libros:
+          cada registro que no se pudo resolver esta aqui con su motivo, y cada
+          dia que no cuadra aparece con su fecha.
         </p>
       </header>
 
+      {/* El filtro de archivo de origen vive aqui y no en la barra global: es
+          una pregunta sobre de que libro salio la fila, y solo importa cuando
+          se esta auditando la carga. */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="rotulo">Libro de origen</span>
+        <MultiSelect
+          titulo="Archivo"
+          opciones={catalogo.archivos}
+          seleccion={filtros.archivos}
+          onChange={(archivos) => ponerFiltros({ archivos })}
+          ancho={300}
+        />
+        {filtros.archivos.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => ponerFiltros({ archivos: [] })}
+            className="text-[12px] text-acento hover:underline"
+          >
+            todos los archivos
+          </button>
+        ) : null}
+      </div>
+
       <section>
-        <h3 className="rotulo mb-2">Indicadores</h3>
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           {indicadores.map((i) => (
             <Kpi
               key={i.rotulo}
@@ -200,13 +224,12 @@ export default function PaginaCalidad() {
 
       <section className="flex flex-col gap-2">
         <div>
-          <h3 className="text-[13px] font-semibold tracking-tight">
-            Filas rechazadas
+          <h3 className="text-[19px] font-semibold tracking-tight">
+            Registros que no se pudieron cargar
           </h3>
-          <p className="text-[11.5px] text-tinta-3 mt-0.5 max-w-[80ch] leading-relaxed">
-            Casi todas por la misma causa de fondo: la celda de hostal esta
-            vacia y no hay alojamiento vigente del cual deducirla. Responden al
-            filtro de archivo de la barra superior.
+          <p className="text-tinta-2 mt-0.5 max-w-[74ch]">
+            Casi todos por lo mismo: no dice en que hostal fue, y no habia
+            un alojamiento abierto del que deducirlo.
           </p>
         </div>
         <Tabla
@@ -221,8 +244,8 @@ export default function PaginaCalidad() {
 
       <section className="flex flex-col gap-2">
         <div className="flex items-baseline gap-2 flex-wrap">
-          <h3 className="text-[13px] font-semibold tracking-tight">
-            Descuadre por fecha
+          <h3 className="text-[19px] font-semibold tracking-tight">
+            Dias que no cuadran
           </h3>
           {descuadres.length > 0 ? (
             <Etiqueta tono="aviso">
@@ -233,12 +256,11 @@ export default function PaginaCalidad() {
             <Etiqueta tono="bien">todo cuadra</Etiqueta>
           )}
         </div>
-        <p className="text-[11.5px] text-tinta-3 max-w-[80ch] leading-relaxed">
-          Compara las noches promovidas desde{" "}
-          <span className="codigo">R. OFICIAL</span> contra las filas de ingreso
-          que registro cada hoja diaria. En el Excel esto vive escondido en la
-          fila 168; aqui queda con nombre y fecha. Es auditoria de la carga
-          completa, asi que no responde a los filtros.
+        <p className="text-tinta-2 max-w-[74ch]">
+          Compara las noches que quedaron cargadas contra los ingresos que se
+          anotaron ese dia. Cuando no coinciden, falta o sobra una firma en el
+          libro de origen. Es una revision de toda la carga, asi que no responde
+          a los filtros de arriba.
         </p>
         <Tabla
           columnas={colsDescuadre}
@@ -251,25 +273,25 @@ export default function PaginaCalidad() {
 
       <section className="flex flex-col gap-2">
         <div className="flex items-baseline gap-2 flex-wrap">
-          <h3 className="text-[13px] font-semibold tracking-tight">
-            Fechas fuera del periodo
+          <h3 className="text-[19px] font-semibold tracking-tight">
+            Comidas con fecha imposible
           </h3>
           {fueraDeRango.length > 0 ? (
             <Etiqueta tono="critico">
-              <span aria-hidden>▲</span> {numero(fueraDeRango.length)} servicios
+              <span aria-hidden>▲</span> {numero(fueraDeRango.length)} comidas
             </Etiqueta>
           ) : (
             <Etiqueta tono="bien">ninguno</Etiqueta>
           )}
         </div>
-        <p className="text-[11.5px] text-tinta-3 max-w-[80ch] leading-relaxed">
-          Servicios fechados fuera de{" "}
-          <span className="codigo">{fechaLarga(VENTANA.desde)}</span> —{" "}
-          <span className="codigo">{fechaLarga(VENTANA.hasta)}</span>, que es
-          todo lo que los libros de julio 2026 dicen cubrir contando ALMUERZOS
-          ISAM. Casi con seguridad son anos mal tecleados en la celda de origen:
-          el ETL carga la fecha que trae el libro, sin corregirla. Vale revisar
-          la hoja y la fila.
+        <p className="text-tinta-2 max-w-[74ch]">
+          Comidas fechadas fuera de{" "}
+          <span className="cifras">{fechaLarga(VENTANA.desde)}</span> y{" "}
+          <span className="cifras">{fechaLarga(VENTANA.hasta)}</span>, que es
+          todo el periodo que cubren los libros. Casi con seguridad son anos mal
+          tecleados al anotarlas: la fecha se carga tal como venia, sin
+          corregirla. Son las que hacen que aparezcan meses que no existen, asi
+          que vale la pena arreglarlas en el origen.
         </p>
         <Tabla
           columnas={colsFuera}

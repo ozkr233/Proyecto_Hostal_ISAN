@@ -49,6 +49,12 @@ GRANT INSERT, UPDATE ON core.tipo_ausencia    TO app_rw;
 -- ademas el sello de ultimo_acceso al entrar.
 GRANT INSERT, UPDATE ON core.usuario          TO app_rw;
 
+-- La capacidad de las habitaciones: el Excel nunca la trajo y las 67 quedaron
+-- en el DEFAULT 2. Mientras siga asi, el aviso de "sobre capacidad" del panel
+-- no prueba hacinamiento sino que falta cargar el dato, asi que /catalogos deja
+-- corregirlo. Solo UPDATE: el alta de una habitacion sigue siendo por SQL.
+GRANT UPDATE ON core.habitacion               TO app_rw;
+
 -- OJO CON LO QUE NO ESTA:
 --
 --   * DELETE en ninguna otra tabla. Una estadia se corrige, no se borra; una
@@ -56,9 +62,10 @@ GRANT INSERT, UPDATE ON core.usuario          TO app_rw;
 --   * core.estadia_noche no aparece: la mueve core.sincronizar_noches(), que es
 --     SECURITY DEFINER. Las noches son la unidad que se cobra y no se tocan a
 --     mano desde la aplicacion, ni siquiera por error.
---   * core.hostal, core.empresa y core.habitacion son de solo lectura aqui: el
---     alta de un hostal o una empresa es una decision administrativa que se hace
---     por SQL, no desde el formulario de recepcion.
+--   * core.hostal y core.empresa son de solo lectura aqui, y de core.habitacion
+--     solo se puede actualizar la capacidad (ver el GRANT de arriba): el alta de
+--     un hostal, una empresa o una habitacion es una decision administrativa que
+--     se hace por SQL, no desde el formulario de recepcion.
 --
 -- Las secuencias de las columnas GENERATED ALWAYS AS IDENTITY no necesitan
 -- GRANT: el permiso de INSERT sobre la tabla ya alcanza.
